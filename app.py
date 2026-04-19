@@ -2,6 +2,7 @@ from src.database.connect import engine
 from src.database.models import Student, Group, Teacher, Subject, Grade
 from datetime import datetime
 
+
 from sqlalchemy import text, select, func
 from sqlalchemy.orm import Session
 
@@ -14,7 +15,7 @@ def create_groups( session: Session):
     return groups
 
 
-def create_teachers(session: Session, ):
+def create_teachers(session: Session):
     teachers = [
         Teacher(name="Dr. Smith"),
         Teacher(name="Prof. Johnson"),
@@ -43,7 +44,7 @@ def create_grades(session: Session, students, subjects):
     grades = [
         Grade(student=students[0], subject=subjects[0], grade=95),
             Grade(student=students[0], subject=subjects[1], grade=88),
-            Grade(student=students[1], subject=subjects[0], grade=76),
+            Grade(student=students[1], subject=subjects[0], grade=89),
         ]
     session.add_all(grades)
     return grades
