@@ -12,6 +12,7 @@ url_db = f"postgresql+psycopg://admin:password@{DB_HOST}:5433/education_manageme
 
 
 
+
 engine = create_engine(url_db, echo=True)
 # conn = engine.connect()
 Session = sessionmaker(bind=engine)

@@ -34,7 +34,10 @@ class Group(Base):
 
     students: Mapped[list["Student"]] = relationship(back_populates="group")
 
-    group = relationship(back_populates="students")
+
+
+    # group = relationship(back_populates="students")
+
 
     def __str__(self):
         return f"Group({self.id}, {self.name})"
