@@ -272,6 +272,94 @@ def get_subjects_by_student_and_teacher(student_name: str, teacher_name: str):
         )
         return session.execute(sgl).fetchall()
 
+'''--Середній бал, який певний викладач ставить певному студентові
+
+SELECT 
+    s.name AS student_name, 
+    t.name AS teacher_name, 
+    ROUND(AVG(g.grade), 2) AS average_grade
+FROM grades g 
+JOIN students s ON g.student_id = s.id
+JOIN subjects sub ON g.subject_id = sub.id 
+JOIN teachers t ON sub.teacher_id = t.id
+WHERE s.name = 'William Jarvis' AND t.name = 'Catherine Rodriguez'
+GROUP BY s.id, s.name, t.id, t.name;
+
+'''
+def get_average_grade_by_student_and_teacher(student_name: str, teacher_name: str):
+    with Session(engine) as session:
+        sgl = (
+            select(
+                Student.name.label("student_name"),
+                Teacher.name.label("teacher_name"),
+                func.round(func.avg(Grade.grade), 2).label("average_grade"),
+            )
+            .join(Grade, Student.id == Grade.student_id)
+            .join(Subject, Grade.subject_id == Subject.id)
+            .join(Teacher, Subject.teacher_id == Teacher.id)
+            .where(Student.name == student_name, Teacher.name == teacher_name)
+            .group_by(Student.id, Student.name, Teacher.id, Teacher.name)
+        )
+        return session.execute(sgl).fetchone()
+    
+'''
+
+--Оцінки студентів у певній групі з певного предмета на останньому занятті.
+SELECT 
+   s.name AS student_name, 
+   g.grade,
+   g2.name AS group_name,
+   s2.name AS subject_name,
+   g.created_at
+FROM grades g 
+JOIN students s ON g.student_id = s.id 
+JOIN groups g2 ON s.group_id = g2.id 
+JOIN subjects s2 ON g.subject_id = s2.id 
+WHERE g2.name = 'Group B' 
+  AND s2.name = 'Math'
+  AND g.created_at = (
+      SELECT MAX(g3.created_at) 
+      FROM grades g3 
+      JOIN students s3 ON g3.student_id = s3.id 
+      -- Зв'язуємо підзапит із зовнішніми g2 та s2
+      WHERE s3.group_id = g2.id AND g3.subject_id = s2.id
+  )
+ORDER BY s.name;
+
+'''
+
+def get_latest_grades_by_group_and_subject(group_name: str, subject_name: str):
+    with Session(engine) as session:
+        subquery = (
+            select(func.max(Grade.created_at))
+            .join(Student, Grade.student_id == Student.id)
+            .join(Group, Student.group_id == Group.id)
+            .join(Subject, Grade.subject_id == Subject.id)
+            .where(Group.name == group_name, Subject.name == subject_name)
+            .scalar_subquery()
+        )
+
+        sgl = (
+            select(
+                Student.name.label("student_name"),
+                Grade.grade,
+                Group.name.label("group_name"),
+                Subject.name.label("subject_name"),
+                Grade.created_at,
+            )
+            .join(Student, Grade.student_id == Student.id)
+            .join(Group, Student.group_id == Group.id)
+            .join(Subject, Grade.subject_id == Subject.id)
+            .where(
+                Group.name == group_name,
+                Subject.name == subject_name,
+                Grade.created_at == subquery,
+            )
+            .order_by(Student.name)
+        )
+
+        return session.execute(sgl).fetchall()
+    
 
 if __name__ == "__main__":
     # print(get_top_students())
@@ -283,4 +371,6 @@ if __name__ == "__main__":
     # print(get_grades_by_group_and_subject("Group A", "Art"))
     # print(get_average_grade_by_teacher("Denise Williams"))
     # print(get_subjects_by_student("Emily Schwartz"))
-    print(get_subjects_by_student_and_teacher("Emily Schwartz", "Denise Williams"))
+    # print(get_subjects_by_student_and_teacher("Emily Schwartz", "Denise Williams"))
+    # print(get_average_grade_by_student_and_teacher("William Jarvis", "Catherine Rodriguez"))
+    # print(get_latest_grades_by_group_and_subject("Group B", "Math"))
